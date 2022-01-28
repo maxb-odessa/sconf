@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"githug.com/maxb-odessa/slog"
+	"github.com/maxb-odessa/slog"
 )
 
 // config var name-val pair type
