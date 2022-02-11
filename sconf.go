@@ -51,11 +51,7 @@ func Read(path string) error {
 	// read config file
 	for lineNo := 1; scanner.Scan(); lineNo++ {
 
-		line, err := prepareLine(scanner.Text())
-		if err != nil {
-			return err
-		}
-
+		line := prepareLine(scanner.Text())
 		if line == "" {
 			continue
 		}
@@ -77,15 +73,12 @@ func Read(path string) error {
 }
 
 // prepare config file line for parsing: trim and unescape it, discard comments
-func prepareLine(line string) (string, error) {
-
+func prepareLine(line string) string {
 	l := strings.TrimSpace(line)
-
 	if len(l) < 1 || l[0] == '#' || l[0] == ';' {
-		return "", nil
+		return ""
 	}
-
-	return strconv.Unquote(l)
+	return l
 }
 
 // parse prepared config line
@@ -128,6 +121,13 @@ func parseLine(line string) (*parsedLine, error) {
 	if len(value) < 1 {
 		return nil, fmt.Errorf("param value missed")
 	}
+
+	value = strings.ReplaceAll(value, `\n`, "\n")
+	value = strings.ReplaceAll(value, `\r`, "\r")
+	value = strings.ReplaceAll(value, `\t`, "\t")
+	value = strings.ReplaceAll(value, `\\`, `\`)
+	value = strings.ReplaceAll(value, `\'`, `'`)
+	value = strings.ReplaceAll(value, `\"`, `"`)
 
 	return &parsedLine{
 		scope: currScope,
