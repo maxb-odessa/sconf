@@ -1,8 +1,11 @@
 /* simple config file reader
    the format is toml like
      # comment
+     ; comment too
      [scope]
-     name = val
+     key = val
+     [another scope]
+	 another key = another value
      ..
 */
 
@@ -14,8 +17,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/maxb-odessa/slog"
 )
 
 // config var name-val pair type
@@ -50,7 +51,11 @@ func Read(path string) error {
 	// read config file
 	for lineNo := 1; scanner.Scan(); lineNo++ {
 
-		line := prepareLine(scanner.Text())
+		line, err := prepareLine(scanner.Text())
+		if err != nil {
+			return err
+		}
+
 		if line == "" {
 			continue
 		}
@@ -65,22 +70,21 @@ func Read(path string) error {
 			continue
 		}
 
-		slog.Debug(9, "configured: [%s] '%s' => '%v'", pl.scope, pl.name, pl.value)
-
 		nvSet(pl.scope, pl.name, pl.value)
 	}
 
 	return nil
 }
 
-// prepare config file line for parsing
-func prepareLine(line string) string {
-	// skip empty lines and comments
+// prepare config file line for parsing: trim and unescape it, discard comments
+func prepareLine(line string) (string, error) {
 	l := strings.TrimSpace(line)
-	if len(l) < 1 || l[0] == '#' {
-		return ""
+	if len(l) < 1 || l[0] == '#' || l[0] == ';' {
+		return "", nil
+	} else if l, err := strconv.Unquote(l); err != nil {
+		return "", err
 	}
-	return l
+	return l, nil
 }
 
 // parse prepared config line
@@ -139,7 +143,7 @@ func nvSet(scope string, name string, value string) {
 }
 
 // get named string value from specified scope
-func ValStr(scope string, name string) (string, error) {
+func ValAsStr(scope string, name string) (string, error) {
 	if nvp, ok := nvData[scope]; ok {
 		if val, ok := nvPair(*nvp)[name]; ok {
 			return val, nil
@@ -149,7 +153,7 @@ func ValStr(scope string, name string) (string, error) {
 }
 
 // get names int32 value from specified scope
-func ValInt32(scope string, name string) (int32, error) {
+func ValAsInt32(scope string, name string) (int32, error) {
 	if val, err := ValStr(scope, name); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseInt(val, 10, 0); err != nil {
@@ -160,7 +164,7 @@ func ValInt32(scope string, name string) (int32, error) {
 }
 
 // get names float value from specified scope
-func ValFloat32(scope string, name string) (float32, error) {
+func ValAsFloat32(scope string, name string) (float32, error) {
 	if val, err := ValStr(scope, name); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseFloat(val, 32); err != nil {
