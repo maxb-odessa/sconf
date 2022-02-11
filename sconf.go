@@ -78,13 +78,14 @@ func Read(path string) error {
 
 // prepare config file line for parsing: trim and unescape it, discard comments
 func prepareLine(line string) (string, error) {
+
 	l := strings.TrimSpace(line)
+
 	if len(l) < 1 || l[0] == '#' || l[0] == ';' {
 		return "", nil
-	} else if l, err := strconv.Unquote(l); err != nil {
-		return "", err
 	}
-	return l, nil
+
+	return strconv.Unquote(l)
 }
 
 // parse prepared config line
@@ -154,7 +155,7 @@ func ValAsStr(scope string, name string) (string, error) {
 
 // get names int32 value from specified scope
 func ValAsInt32(scope string, name string) (int32, error) {
-	if val, err := ValStr(scope, name); err != nil {
+	if val, err := ValAsStr(scope, name); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseInt(val, 10, 0); err != nil {
 		return 0, err
@@ -165,7 +166,7 @@ func ValAsInt32(scope string, name string) (int32, error) {
 
 // get names float value from specified scope
 func ValAsFloat32(scope string, name string) (float32, error) {
-	if val, err := ValStr(scope, name); err != nil {
+	if val, err := ValAsStr(scope, name); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseFloat(val, 32); err != nil {
 		return 0, err
