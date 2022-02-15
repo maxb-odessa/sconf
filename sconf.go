@@ -19,16 +19,16 @@ import (
 	"strings"
 )
 
-// config var name-val pair type
-type nvPair map[string]string
+// config var key-val pair type
+type kvPair map[string]string
 
 // parsed and stored config data itself
-var nvData map[string]*nvPair
+var kvScopes map[string]*kvPair
 
 // parsed line
 type parsedLine struct {
 	scope string
-	name  string
+	key   string
 	value string
 }
 
@@ -36,7 +36,7 @@ type parsedLine struct {
 func Read(path string) error {
 
 	// init config data storage
-	nvData = make(map[string]*nvPair)
+	kvScopes = make(map[string]*kvPair)
 
 	// open config file
 	fp, err := os.Open(path)
@@ -66,7 +66,7 @@ func Read(path string) error {
 			continue
 		}
 
-		nvSet(pl.scope, pl.name, pl.value)
+		kvSet(pl.scope, pl.key, pl.value)
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func parseLine(line string) (*parsedLine, error) {
 	if line[0] == '[' && line[lineLen-1] == ']' {
 		currScope = strings.TrimSpace(line[1 : lineLen-1])
 		if currScope == "" {
-			return nil, fmt.Errorf("invalid scope name")
+			return nil, fmt.Errorf("ikvalid scope name")
 		}
 		return nil, nil
 	}
@@ -112,8 +112,8 @@ func parseLine(line string) (*parsedLine, error) {
 		return nil, fmt.Errorf("can not parse")
 	}
 
-	name := strings.TrimSpace(tokens[0])
-	if len(name) < 1 {
+	key := strings.TrimSpace(tokens[0])
+	if len(key) < 1 {
 		return nil, fmt.Errorf("param name missed")
 	}
 
@@ -131,31 +131,40 @@ func parseLine(line string) (*parsedLine, error) {
 
 	return &parsedLine{
 		scope: currScope,
-		name:  name,
+		key:   key,
 		value: value,
 	}, nil
 }
 
 // set (overriding) name-value pair in aprropriate scope
-func nvSet(scope string, name string, value string) {
-	nv := make(nvPair)
-	nv[name] = value
-	nvData[scope] = &nv
+func kvSet(scope string, key string, value string) {
+	kvp := make(kvPair)
+	kvp[key] = value
+	kvScopes[scope] = &kvp
 }
 
-// get named string value from specified scope
-func ValAsStr(scope string, name string) (string, error) {
-	if nvp, ok := nvData[scope]; ok {
-		if val, ok := nvPair(*nvp)[name]; ok {
+// get array of configured scopes
+func Scopes() []string {
+	var scopes []string
+	for sc, _ := range kvScopes {
+		scopes = append(scopes, sc)
+	}
+	return scopes
+}
+
+// get string value from specified scope
+func ValAsStr(scope string, key string) (string, error) {
+	if kvp, ok := kvScopes[scope]; ok {
+		if val, ok := kvPair(*kvp)[key]; ok {
 			return val, nil
 		}
 	}
-	return "", fmt.Errorf("'%s' is not found in '%s'", name, scope)
+	return "", fmt.Errorf("'%s' is not found in '%s'", key, scope)
 }
 
-// get names int32 value from specified scope
-func ValAsInt32(scope string, name string) (int32, error) {
-	if val, err := ValAsStr(scope, name); err != nil {
+// get int32 value from specified scope
+func ValAsInt32(scope string, key string) (int32, error) {
+	if val, err := ValAsStr(scope, key); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseInt(val, 10, 0); err != nil {
 		return 0, err
@@ -164,9 +173,9 @@ func ValAsInt32(scope string, name string) (int32, error) {
 	}
 }
 
-// get names float value from specified scope
-func ValAsFloat32(scope string, name string) (float32, error) {
-	if val, err := ValAsStr(scope, name); err != nil {
+// get float32 value from specified scope
+func ValAsFloat32(scope string, key string) (float32, error) {
+	if val, err := ValAsStr(scope, key); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseFloat(val, 32); err != nil {
 		return 0, err
