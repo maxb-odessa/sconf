@@ -138,9 +138,12 @@ func parseLine(line string) (*parsedLine, error) {
 
 // set (overriding) name-value pair in aprropriate scope
 func kvSet(scope string, key string, value string) {
-	kvp := make(kvPair)
-	kvp[key] = value
-	kvScopes[scope] = kvp
+
+	if _, ok := kvScopes[scope]; !ok {
+		kvScopes[scope] = make(kvPair)
+	}
+
+	kvScopes[scope][key] = value
 }
 
 // get array of configured scopes
@@ -159,7 +162,7 @@ func ValAsStr(scope string, key string) (string, error) {
 			return val, nil
 		}
 	}
-	return "", fmt.Errorf("'%s' is not found in '%s'", key, scope)
+	return "", fmt.Errorf("key '%s' not found in scope '%s'", key, scope)
 }
 
 // get int32 value from specified scope
