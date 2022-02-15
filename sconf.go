@@ -23,7 +23,7 @@ import (
 type kvPair map[string]string
 
 // parsed and stored config data itself
-var kvScopes map[string]*kvPair
+var kvScopes map[string]kvPair
 
 // parsed line
 type parsedLine struct {
@@ -36,7 +36,7 @@ type parsedLine struct {
 func Read(path string) error {
 
 	// init config data storage
-	kvScopes = make(map[string]*kvPair)
+	kvScopes = make(map[string]kvPair)
 
 	// open config file
 	fp, err := os.Open(path)
@@ -140,7 +140,7 @@ func parseLine(line string) (*parsedLine, error) {
 func kvSet(scope string, key string, value string) {
 	kvp := make(kvPair)
 	kvp[key] = value
-	kvScopes[scope] = &kvp
+	kvScopes[scope] = kvp
 }
 
 // get array of configured scopes
@@ -155,7 +155,7 @@ func Scopes() []string {
 // get string value from specified scope
 func ValAsStr(scope string, key string) (string, error) {
 	if kvp, ok := kvScopes[scope]; ok {
-		if val, ok := kvPair(*kvp)[key]; ok {
+		if val, ok := kvp[key]; ok {
 			return val, nil
 		}
 	}
