@@ -153,7 +153,7 @@ func Scopes() []string {
 }
 
 // get string value from specified scope
-func ValAsStr(scope string, key string) (string, error) {
+func Str(scope string, key string) (string, error) {
 	if kvp, ok := kvScopes[scope]; ok {
 		if val, ok := kvPair(*kvp)[key]; ok {
 			return val, nil
@@ -162,9 +162,18 @@ func ValAsStr(scope string, key string) (string, error) {
 	return "", fmt.Errorf("'%s' is not found in '%s'", key, scope)
 }
 
+// get string value or return default if failed
+func StrDef(scope string, key string, def string) string {
+	if val, err := Str(scope, key); err != nil {
+		return def
+	} else {
+		return val
+	}
+}
+
 // get int32 value from specified scope
-func ValAsInt32(scope string, key string) (int32, error) {
-	if val, err := ValAsStr(scope, key); err != nil {
+func Int32(scope string, key string) (int32, error) {
+	if val, err := Str(scope, key); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseInt(val, 10, 0); err != nil {
 		return 0, err
@@ -173,13 +182,31 @@ func ValAsInt32(scope string, key string) (int32, error) {
 	}
 }
 
+// get string value or return default if failed
+func Int32Def(scope string, key string, def int32) int32 {
+	if val, err := Int32(scope, key); err != nil {
+		return def
+	} else {
+		return val
+	}
+}
+
 // get float32 value from specified scope
-func ValAsFloat32(scope string, key string) (float32, error) {
-	if val, err := ValAsStr(scope, key); err != nil {
+func Float32(scope string, key string) (float32, error) {
+	if val, err := Str(scope, key); err != nil {
 		return 0, err
 	} else if i, err := strconv.ParseFloat(val, 32); err != nil {
 		return 0, err
 	} else {
 		return float32(i), nil
+	}
+}
+
+// get string value or return default if failed
+func Float32Def(scope string, key string, def float32) float32 {
+	if val, err := Float32(scope, key); err != nil {
+		return def
+	} else {
+		return val
 	}
 }
