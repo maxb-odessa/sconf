@@ -96,7 +96,7 @@ func parseLine(line string) (*parsedLine, error) {
 	if line[0] == '[' && line[lineLen-1] == ']' {
 		currScope = strings.TrimSpace(line[1 : lineLen-1])
 		if currScope == "" {
-			return nil, fmt.Errorf("ikvalid scope name")
+			return nil, fmt.Errorf("invalid scope name")
 		}
 		return nil, nil
 	}
@@ -185,7 +185,7 @@ func Int32(scope string, key string) (int32, error) {
 	}
 }
 
-// get string value or return default if failed
+// get int32 value or return default if failed
 func Int32Def(scope string, key string, def int32) int32 {
 	if val, err := Int32(scope, key); err != nil {
 		return def
@@ -205,9 +205,32 @@ func Float32(scope string, key string) (float32, error) {
 	}
 }
 
-// get string value or return default if failed
+// get float32 value or return default if failed
 func Float32Def(scope string, key string, def float32) float32 {
 	if val, err := Float32(scope, key); err != nil {
+		return def
+	} else {
+		return val
+	}
+}
+
+// get boolean value from specified scope
+func Bool(scope string, key string) (bool, error) {
+	if val, err := Str(scope, key); err != nil {
+		return false, err
+	} else {
+		switch val {
+		case "0", "no", "No", "NO", "false", "False", "FALSE":
+			return false, nil
+		default:
+			return true, nil
+		}
+	}
+}
+
+// get boolean value or return default if failed
+func BoolDef(scope string, key string, def bool) bool {
+	if val, err := Bool(scope, key); err != nil {
 		return def
 	} else {
 		return val
