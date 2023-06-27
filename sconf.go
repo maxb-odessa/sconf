@@ -20,23 +20,27 @@ import (
 )
 
 // config var key-val pair type
-type kvPair map[string]string
+type kvPairT map[string]string
 
 // parsed and stored config data itself
-var kvScopes map[string]kvPair
+var kvScopes map[string]kvPairT
 
 // parsed line
-type parsedLine struct {
+type parsedLineT struct {
 	scope string
 	key   string
 	value string
 }
 
+var configFilesRead string
+
+func init() {
+	// init config data storage
+	kvScopes = make(map[string]kvPairT)
+}
+
 // read and parse config file
 func Read(path string) error {
-
-	// init config data storage
-	kvScopes = make(map[string]kvPair)
 
 	// open config file
 	fp, err := os.Open(path)
@@ -44,6 +48,9 @@ func Read(path string) error {
 		return err
 	}
 	defer fp.Close()
+
+	// preserve config files we've read for Dump() call
+	configFilesRead += "# " + path + "\n"
 
 	scanner := bufio.NewScanner(fp)
 	scanner.Split(bufio.ScanLines)
@@ -84,7 +91,7 @@ func prepareLine(line string) string {
 // parse prepared config line
 var currScope string
 
-func parseLine(line string) (*parsedLine, error) {
+func parseLine(line string) (*parsedLineT, error) {
 	lineLen := len(line)
 
 	// no config line can be shorter than 3 chars (i.e. A=B or [G])
@@ -129,7 +136,7 @@ func parseLine(line string) (*parsedLine, error) {
 	value = strings.ReplaceAll(value, `\'`, `'`)
 	value = strings.ReplaceAll(value, `\"`, `"`)
 
-	return &parsedLine{
+	return &parsedLineT{
 		scope: currScope,
 		key:   key,
 		value: value,
@@ -140,7 +147,7 @@ func parseLine(line string) (*parsedLine, error) {
 func kvSet(scope string, key string, value string) {
 
 	if _, ok := kvScopes[scope]; !ok {
-		kvScopes[scope] = make(kvPair)
+		kvScopes[scope] = make(kvPairT)
 	}
 
 	kvScopes[scope][key] = value
@@ -178,16 +185,36 @@ func StrDef(scope string, key string, def string) string {
 func Int32(scope string, key string) (int32, error) {
 	if val, err := Str(scope, key); err != nil {
 		return 0, err
-	} else if i, err := strconv.ParseInt(val, 10, 0); err != nil {
+	} else if i, err := strconv.ParseInt(val, 0, 32); err != nil {
 		return 0, err
 	} else {
 		return int32(i), nil
 	}
 }
 
-// get int32 value or return default if failed
+// get int64 value from specified scope
+func Int64(scope string, key string) (int64, error) {
+	if val, err := Str(scope, key); err != nil {
+		return 0, err
+	} else if i, err := strconv.ParseInt(val, 0, 64); err != nil {
+		return 0, err
+	} else {
+		return i, nil
+	}
+}
+
+// get int64 value or return default if failed
 func Int32Def(scope string, key string, def int32) int32 {
 	if val, err := Int32(scope, key); err != nil {
+		return def
+	} else {
+		return val
+	}
+}
+
+// get int32 value or return default if failed
+func Int64Def(scope string, key string, def int64) int64 {
+	if val, err := Int64(scope, key); err != nil {
 		return def
 	} else {
 		return val
@@ -205,9 +232,29 @@ func Float32(scope string, key string) (float32, error) {
 	}
 }
 
+// get float32 value from specified scope
+func Float64(scope string, key string) (float64, error) {
+	if val, err := Str(scope, key); err != nil {
+		return 0, err
+	} else if i, err := strconv.ParseFloat(val, 64); err != nil {
+		return 0, err
+	} else {
+		return i, nil
+	}
+}
+
 // get float32 value or return default if failed
 func Float32Def(scope string, key string, def float32) float32 {
 	if val, err := Float32(scope, key); err != nil {
+		return def
+	} else {
+		return val
+	}
+}
+
+// get float64 value or return default if failed
+func Float64Def(scope string, key string, def float64) float64 {
+	if val, err := Float64(scope, key); err != nil {
 		return def
 	} else {
 		return val
@@ -235,4 +282,19 @@ func BoolDef(scope string, key string, def bool) bool {
 	} else {
 		return val
 	}
+}
+
+// dump current config values into specified file
+// useful to create "override" configs
+func Dump(fname string) error {
+	confData := "# Generated dump of: \n" + configFilesRead + "\n"
+
+	for scope, kv := range kvScopes {
+		confData += "[" + scope + "]\n"
+		for key, val := range kv {
+			confData += "  " + key + " = " + val + "\n"
+		}
+	}
+
+	return os.WriteFile(fname, []byte(confData), 0644)
 }
