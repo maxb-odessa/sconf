@@ -7,6 +7,7 @@ beacuse I need it
 ## format
 file format is toml like, ex:
 
+```
  # comment
  ; comment too
  [scope1]
@@ -20,14 +21,18 @@ file format is toml like, ex:
  [scope1]
    forgot to add this key to scope1 = now we did
  ...
-
+```
 ## "api"
+
+```
  import "github.com/maxb-odessa/sconf"
 
  err := sconf.Read("/path/to/conf.txt")
 
+ // get config values as a string
  str, err := sconf.Str("scope", "str key")
- str2 := sconf.Str("scope", "str key", "default value")
+ // the same but with the default if the key is not present
+ str2 := sconf.Str("scope", "str key", "default string value")
 
  intv, err := sconf.Int32("another scope", "number key")
  intv2 := sconf.Int32Def("another scope", "number key", 123)
@@ -44,6 +49,9 @@ file format is toml like, ex:
  boolv, err := sconf.Bool("scope N", "yesno")
  boolv2 := sconf.BoolDef("scope N", "yesno", false)
 
- err = sconf.Read("/path/to/another/conf.txt") // will override already read values or add new
+ // read another config file overriding existing or adding new values 
+ err = sconf.Read("/path/to/another/conf.txt")
 
+ // dump current config values into file, useful to create "overrides"
  err = sconf.Dump("/path/to/conf.dump")
+```
