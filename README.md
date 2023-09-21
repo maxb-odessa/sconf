@@ -31,25 +31,22 @@ file format is toml like, ex:
 
  // get config values as a string
  str, err := sconf.Str("scope", "str key")
- // the same but with the default if the key is not present
+ // the same but with the default if a scope or key is not present
  str2 := sconf.Str("scope", "str key", "default string value")
 
- intv, err := sconf.Int32("another scope", "number key")
- intv2 := sconf.Int32Def("another scope", "number key", 123)
+ // this will return int64
+ intv, err := sconf.Int("another scope", "number key")
+ intv2 := sconf.Int("another scope", "number key", 123)
 
- intv, err := sconf.Int64("another scope", "number key")
- intv2 := sconf.Int64Def("another scope", "number key", 123123567890)
- 
- floatv, err := sconf.Float32("another scope 2", "another float key")
- floatv2 := sconf.Float32Def("another scope 2", "another float key", 123.45)
+ // this will return float64
+ floatv, err := sconf.Float("another scope 2", "another float key")
+ floatv2 := sconf.Float("another scope 2", "another float key", 123.45)
 
- floatv, err := sconf.Float64("another scope 2", "another float key")
- floatv2 := sconf.Float64Def("another scope 2", "another float key", 0.1234e+10)
-
+ // ditto for boolean
  boolv, err := sconf.Bool("scope N", "yesno")
  boolv2 := sconf.BoolDef("scope N", "yesno", false)
 
- // read another config file overriding existing or adding new values 
+ // read another config file overriding existing and/or adding new scopes/keys
  err = sconf.Read("/path/to/another/conf.txt")
 
  // dump current config values into file, useful to create "overrides"

@@ -17,6 +17,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 // config var key-val pair type
@@ -39,7 +41,8 @@ func init() {
 	kvScopes = make(map[string]kvPairT)
 }
 
-// read and parse config file
+// Read reads and parses config file
+// return error or nil
 func Read(path string) error {
 
 	// open config file
@@ -153,7 +156,7 @@ func kvSet(scope string, key string, value string) {
 	kvScopes[scope][key] = value
 }
 
-// get array of configured scopes
+// Scopes returns an array of configured scopes
 func Scopes() []string {
 	var scopes []string
 	for sc, _ := range kvScopes {
@@ -162,129 +165,82 @@ func Scopes() []string {
 	return scopes
 }
 
-// get string value from specified scope
-func Str(scope string, key string) (string, error) {
+func getVal(scope string, key string) (string, error) {
 	if kvp, ok := kvScopes[scope]; ok {
 		if val, ok := kvp[key]; ok {
 			return val, nil
 		}
+	} else {
+		return "", fmt.Errorf("scope '%s' is not found", scope)
 	}
-	return "", fmt.Errorf("key '%s' not found in scope '%s'", key, scope)
+
+	return "", fmt.Errorf("key '%s' is not found in scope '%s'", key, scope)
 }
 
-// get string value or return default if failed
-func StrDef(scope string, key string, def string) string {
-	if val, err := Str(scope, key); err != nil {
-		return def
-	} else {
-		return val
+// Str returns configured value as a string from within specified scope
+// return configured value as a string or an error if (either scope or key) not found
+// if default value specified it will be returned instead of rising an error
+func Str(scope string, key string, def ...string) (string, error) {
+	val, err := getVal(scope, key)
+
+	if err != nil && len(def) > 0 {
+		return def[0], nil
 	}
+
+	return val, err
 }
 
-// get int32 value from specified scope
-func Int32(scope string, key string) (int32, error) {
-	if val, err := Str(scope, key); err != nil {
-		return 0, err
-	} else if i, err := strconv.ParseInt(val, 0, 32); err != nil {
-		return 0, err
-	} else {
-		return int32(i), nil
-	}
-}
+// iInt gets intXX value from specified scope
+func Int[T constraints.Integer](scope string, key string, def ...T) (int64, error) {
+	val, err := getVal(scope, key)
 
-// get int64 value from specified scope
-func Int64(scope string, key string) (int64, error) {
-	if val, err := Str(scope, key); err != nil {
-		return 0, err
-	} else if i, err := strconv.ParseInt(val, 0, 64); err != nil {
-		return 0, err
-	} else {
-		return i, nil
-	}
-}
-
-// get int64 value or return default if failed
-func Int32Def(scope string, key string, def int32) int32 {
-	if val, err := Int32(scope, key); err != nil {
-		return def
-	} else {
-		return val
-	}
-}
-
-// get int32 value or return default if failed
-func Int64Def(scope string, key string, def int64) int64 {
-	if val, err := Int64(scope, key); err != nil {
-		return def
-	} else {
-		return val
-	}
-}
-
-// get float32 value from specified scope
-func Float32(scope string, key string) (float32, error) {
-	if val, err := Str(scope, key); err != nil {
-		return 0, err
-	} else if i, err := strconv.ParseFloat(val, 32); err != nil {
-		return 0, err
-	} else {
-		return float32(i), nil
-	}
-}
-
-// get float32 value from specified scope
-func Float64(scope string, key string) (float64, error) {
-	if val, err := Str(scope, key); err != nil {
-		return 0, err
-	} else if i, err := strconv.ParseFloat(val, 64); err != nil {
-		return 0, err
-	} else {
-		return i, nil
-	}
-}
-
-// get float32 value or return default if failed
-func Float32Def(scope string, key string, def float32) float32 {
-	if val, err := Float32(scope, key); err != nil {
-		return def
-	} else {
-		return val
-	}
-}
-
-// get float64 value or return default if failed
-func Float64Def(scope string, key string, def float64) float64 {
-	if val, err := Float64(scope, key); err != nil {
-		return def
-	} else {
-		return val
-	}
-}
-
-// get boolean value from specified scope
-func Bool(scope string, key string) (bool, error) {
-	if val, err := Str(scope, key); err != nil {
-		return false, err
-	} else {
-		switch val {
-		case "0", "no", "No", "NO", "false", "False", "FALSE":
-			return false, nil
-		default:
-			return true, nil
+	if err != nil {
+		if len(def) > 0 {
+			return int64(def[0]), nil
+		} else {
+			return 0, err
 		}
 	}
+
+	return strconv.ParseInt(val, 0, 64)
 }
 
-// get boolean value or return default if failed
-func BoolDef(scope string, key string, def bool) bool {
-	if val, err := Bool(scope, key); err != nil {
-		return def
-	} else {
-		return val
+// Float gets floatXX value from specified scope
+func Float[T constraints.Float](scope string, key string, def ...T) (float64, error) {
+	val, err := getVal(scope, key)
+
+	if err != nil {
+		if len(def) > 0 {
+			return float64(def[0]), nil
+		} else {
+			return 0, err
+		}
+	}
+
+	return strconv.ParseFloat(val, 64)
+}
+
+// Bool gets boolean value from specified scope
+func Bool(scope string, key string, def ...bool) (bool, error) {
+	val, err := getVal(scope, key)
+
+	if err != nil {
+		if len(def) > 0 {
+			return def[0], nil
+		} else {
+			return false, err
+		}
+	}
+
+	switch strings.ToLower(val) {
+	case "0", "no", "f", "false", "none", "never", "negative":
+		return false, nil
+	default:
+		return true, nil
 	}
 }
 
-// dump current config values into specified file
+// Dump current config values into specified file
 // useful to create "override" configs
 func Dump(fname string) error {
 	confData := "# Generated dump of: \n" + configFilesRead + "\n"

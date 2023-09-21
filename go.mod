@@ -1,3 +1,5 @@
 module github.com/maxb-odessa/sconf
 
-go 1.16
+go 1.20
+
+require golang.org/x/exp v0.0.0-20230905200255-921286631fa9
