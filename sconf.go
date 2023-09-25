@@ -17,8 +17,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/constraints"
 )
 
 // config var key-val pair type
@@ -41,6 +39,34 @@ func init() {
 	kvScopes = make(map[string]kvPairT)
 }
 
+// we won't read very large files, say >16MB
+const maxConfigSize = 16 * 1024 * 1024
+
+var configSizeLimit int64
+
+// SetReadLimit for config file size we may read
+func SetReadLimit(limit int64) error {
+	if limit > 0 {
+		if limit < maxConfigSize {
+			configSizeLimit = limit
+			return nil
+		} else {
+			return fmt.Errorf("new limit exceeds upper boundary of %d bytes", maxConfigSize)
+		}
+	}
+
+	return fmt.Errorf("invalid value")
+}
+
+// ReadLimit returns config size limit
+func ReadLimit() int64 {
+	if configSizeLimit == 0 {
+		configSizeLimit = maxConfigSize
+	}
+
+	return configSizeLimit
+}
+
 // Read reads and parses config file
 // return error or nil
 func Read(path string) error {
@@ -51,6 +77,12 @@ func Read(path string) error {
 		return err
 	}
 	defer fp.Close()
+
+	confLimit := ReadLimit()
+	fileInfo, err := fp.Stat()
+	if fileInfo.Size() > confLimit {
+		return fmt.Errorf("file size exceeds limit of %d bytes", confLimit)
+	}
 
 	// preserve config files we've read for Dump() call
 	configFilesRead += "# " + path + "\n"
@@ -191,12 +223,12 @@ func Str(scope string, key string, def ...string) (string, error) {
 }
 
 // iInt gets intXX value from specified scope
-func Int[T constraints.Integer](scope string, key string, def ...T) (int64, error) {
+func Int(scope string, key string, def ...int64) (int64, error) {
 	val, err := getVal(scope, key)
 
 	if err != nil {
 		if len(def) > 0 {
-			return int64(def[0]), nil
+			return def[0], nil
 		} else {
 			return 0, err
 		}
@@ -206,12 +238,12 @@ func Int[T constraints.Integer](scope string, key string, def ...T) (int64, erro
 }
 
 // Float gets floatXX value from specified scope
-func Float[T constraints.Float](scope string, key string, def ...T) (float64, error) {
+func Float(scope string, key string, def ...float64) (float64, error) {
 	val, err := getVal(scope, key)
 
 	if err != nil {
 		if len(def) > 0 {
-			return float64(def[0]), nil
+			return def[0], nil
 		} else {
 			return 0, err
 		}
