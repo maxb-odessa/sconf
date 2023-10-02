@@ -55,4 +55,7 @@ file format is toml like, ex:
 
  // dump current config values into file, useful to create "overrides"
  err = sconf.Dump("/path/to/conf.dump")
+
+ // clear configured data
+ sconf.Clear()
 ```
