@@ -199,3 +199,7 @@ func TestBool(t *testing.T) {
 	}
 
 }
+
+func TestDump(t *testing.T) {
+	Dump("dump-test.conf")
+}

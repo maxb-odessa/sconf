@@ -27,6 +27,10 @@ file format is toml like, ex:
 ```
  import "github.com/maxb-odessa/sconf"
 
+ // set max config file limit (optional)
+ err := SetReadLimit(1024)
+
+ // read config file
  err := sconf.Read("/path/to/conf.txt")
 
  // get config values as a string

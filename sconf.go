@@ -32,11 +32,15 @@ type parsedLineT struct {
 	value string
 }
 
-var configFilesRead string
+var configFilesRead []string
 
 func init() {
-	// init config data storage
+	Clear()
+}
+
+func Clear() {
 	kvScopes = make(map[string]kvPairT)
+	configFilesRead = make([]string, 0)
 }
 
 // we won't read very large files, say >16MB
@@ -84,9 +88,6 @@ func Read(path string) error {
 		return fmt.Errorf("file size exceeds limit of %d bytes", confLimit)
 	}
 
-	// preserve config files we've read for Dump() call
-	configFilesRead += "# " + path + "\n"
-
 	scanner := bufio.NewScanner(fp)
 	scanner.Split(bufio.ScanLines)
 
@@ -110,6 +111,9 @@ func Read(path string) error {
 
 		kvSet(pl.scope, pl.key, pl.value)
 	}
+
+	// preserve config files we've read for Dump() call
+	configFilesRead = append(configFilesRead, path)
 
 	return nil
 }
@@ -275,7 +279,12 @@ func Bool(scope string, key string, def ...bool) (bool, error) {
 // Dump current config values into specified file
 // useful to create "override" configs
 func Dump(fname string) error {
-	confData := "# Generated dump of: \n" + configFilesRead + "\n"
+
+	if len(configFilesRead) == 0 {
+		return fmt.Errorf("no config file(s) read yet")
+	}
+
+	confData := "# Generated from: " + strings.Join(configFilesRead, ", ") + "\n"
 
 	for scope, kv := range kvScopes {
 		confData += "[" + scope + "]\n"
