@@ -250,7 +250,7 @@ func Str(scope string, key string, def ...string) (string, error) {
 	return val, err
 }
 
-// iInt gets intXX value from specified scope
+// Int gets intXX value from specified scope
 func Int(scope string, key string, def ...int64) (int64, error) {
 	val, err := getVal(scope, key)
 
