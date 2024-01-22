@@ -19,6 +19,9 @@ import (
 	"strings"
 )
 
+// strict parsing mode flag
+var strictMode bool
+
 // config var key-val pair type
 type kvPairT map[string]string
 
@@ -41,6 +44,12 @@ func init() {
 func Clear() {
 	kvScopes = make(map[string]kvPairT)
 	configFilesRead = make([]string, 0)
+}
+
+// ToggleStrictMode toggles strict parsing mode, returns prev mode
+func ToggleStrictMode() bool {
+	strictMode = !strictMode
+	return !strictMode
 }
 
 // we won't read very large files, say >16MB
@@ -109,7 +118,9 @@ func Read(path string) error {
 			continue
 		}
 
-		kvSet(pl.scope, pl.key, pl.value)
+		if err := kvSet(pl.scope, pl.key, pl.value); err != nil {
+			return err
+		}
 	}
 
 	// preserve config files we've read for Dump() call
@@ -140,10 +151,15 @@ func parseLine(line string) (*parsedLineT, error) {
 
 	// got a scope defining line: remember scope name and return
 	if line[0] == '[' && line[lineLen-1] == ']' {
+
 		currScope = strings.TrimSpace(line[1 : lineLen-1])
-		if currScope == "" {
-			return nil, fmt.Errorf("invalid scope name")
+
+		if strictMode {
+			if _, ok := kvScopes[currScope]; ok {
+				return nil, fmt.Errorf("scope '%s' already defined (strict mode ON)", currScope)
+			}
 		}
+
 		return nil, nil
 	}
 
@@ -183,13 +199,21 @@ func parseLine(line string) (*parsedLineT, error) {
 }
 
 // set (overriding) name-value pair in aprropriate scope
-func kvSet(scope string, key string, value string) {
+func kvSet(scope string, key string, value string) error {
 
 	if _, ok := kvScopes[scope]; !ok {
 		kvScopes[scope] = make(kvPairT)
 	}
 
+	if strictMode {
+		if _, ok := kvScopes[scope][key]; ok {
+			return fmt.Errorf("key '%s' in scope '%s' already exists (strict mode ON)", key, scope)
+		}
+	}
+
 	kvScopes[scope][key] = value
+
+	return nil
 }
 
 // Scopes returns an array of configured scopes

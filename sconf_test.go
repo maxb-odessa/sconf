@@ -40,12 +40,32 @@ func TestRead(t *testing.T) {
 		err  error
 	}
 
-	var readTests = []readTest{
+	// test strict mode first
+	ToggleStrictMode()
+	readTests := []readTest{
+		{"tests/strict-scopes.config", dummyError},
+		{"tests/strict-keys.config", dummyError},
+	}
+
+	for _, test := range readTests {
+		err := Read(test.path)
+		if test.err != nil && err == nil {
+			t.Fatalf("Read(%s): Failure expected, but got OK", test.path)
+		}
+		if test.err == nil && err != nil {
+			t.Fatalf("Read(%s): OK expected, but got failure (%s)", test.path, err)
+		}
+	}
+
+	// other tests
+	Clear()
+	ToggleStrictMode()
+	readTests = []readTest{
 		{"", dummyError},
-		{"no such file", dummyError},
-		{"big-test.config", dummyError},
-		{"bad-test.config", dummyError},
-		{"good-test.config", nil},
+		{"tests/no such file", dummyError},
+		{"tests/big.config", dummyError},
+		{"tests/bad.config", dummyError},
+		{"tests/good.config", nil},
 	}
 
 	for _, test := range readTests {
@@ -201,5 +221,5 @@ func TestBool(t *testing.T) {
 }
 
 func TestDump(t *testing.T) {
-	Dump("dump-test.conf")
+	Dump("tests/generated-dump.conf")
 }

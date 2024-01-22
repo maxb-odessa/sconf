@@ -30,6 +30,9 @@ file format is toml like, ex:
  // set max config file limit (optional)
  err := SetReadLimit(1024)
 
+ // enable strict mode: no scopes or keys duplicates allowed
+ SetStrictMode()
+
  // read config file
  err := sconf.Read("/path/to/conf.txt")
 
